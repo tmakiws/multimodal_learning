@@ -6,7 +6,6 @@ from meanap import *
 import numpy as np
 import sys
 from PIL import Image
-from boltzmann_machine import BiModalDBM
 from sklearn.neighbors import NearestNeighbors
 
 import datetime
@@ -82,7 +81,8 @@ def pascal_retrieval(model, nn_k):
         os.mkdir(dirname)
     except OSError, e:
         if e.errno != errno.EEXIST:
-            raise e
+            os.mkdir('retrieval')
+            #raise e
         pass
 
     f = open("retrieval/%s.log" % now,"w")

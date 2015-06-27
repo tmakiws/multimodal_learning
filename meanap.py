@@ -31,10 +31,7 @@ def apk(actual, predicted, k=10):
             num_hits += 1.0
             score += num_hits / (i+1.0)
 
-    # if not all(actual):
-    #     return 1.0
-
-    if len(actual) == 0:
+    if not all(actual):
         return 1.0
 
     return score / min(len(actual), k)
@@ -60,18 +57,44 @@ def mapk(actual, predicted, k=10):
     score : double
     The mean average precision at k over the input lists
     """
-
+    # print predicted, actual
     res = [apk(a,p,k) for a,p in zip(actual, predicted) if not len(a) == 0]
-    
+    # print res
     return np.mean(res)
 
 
-if __name__ == '__main__':
-    actual = [[2,4],[3,4],[1,3]]
-    predicted = [[3,2,1,5,4],[4,5,1,2,3],[2,4,1,3,5]]
+def top20(actual, predicted, k=50):
+    
 
-    for i in xrange(len(predicted)):
-        print apk(actual[i], predicted[i],100)
+    # print type(predicted)
+    if len(predicted) > k:
+        predicted = predicted[:k]
+
+    #print len(predicted)
+    end = int(len(predicted) * 0.2)
+    num_hits = 0.0
+
+    for i,p in enumerate(predicted[:end]):
+       if p in actual and p not in predicted[:i]:
+            num_hits += 1.0
+
+    if not all(actual):
+        return 1.0
+
+    return num_hits / end
+
+def mtop20(actual, predicted, k=50):
+
+    # print predicted, actual
+    res = [top20(a,p,k) for a,p in zip(actual, predicted) if not len(a) == 0]
+    # print res
+    return np.mean(res)
+
+
+
+
+if __name__ == '__main__':
+    actual = [[2,4,6,8,10],[2,4,6,8,10],[2,4,6,8,10]]
+    predicted = [[3,2,1,3,8],[4,8,1,2,3],[2,4,8,6,9]]
 
     print mapk(actual, predicted, k=3)
-    print mapk(actual, predicted, k=5)
