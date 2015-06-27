@@ -15,32 +15,37 @@ import errno
 
 flickr_root = '/home/iwase/dataset/flickr/'
 
-def load_flickr25k(n_train=15000):
+def load_flickr25k(n_train=15000, unlab=False):
     
+    # labelled images
     image1 = np.load(flickr_root + 'image/labelled/combined-00001-of-00100.npy')
     image2 = np.load(flickr_root + 'image/labelled/combined-00002-of-00100.npy')
     image3 = np.load(flickr_root + 'image/labelled/combined-00003_0-of-00100.npy')
-
-
-    for _, _, fs in os.walk(flickr_root + 'image/unlabelled/'):
-        fs.sort()
-        for i, f in enumerate(fs):
-            print f
-            image = np.load(flickr_root + 'image/unlabelled/%s' % f)
-            if i == 0:
-                unlab_image = image
-            else:
-                if i == 2:
-                    break
-                unlab_image = np.concatenate((unlab_image,image), axis=0)
-
-    print unlab_image.shape
-            
-        
-    text = LoadSparse(flickr_root + 'text/text_all_2000_labelled.npz').todense()
-    label = np.load(flickr_root + 'labels.npy')
     lab_image = np.concatenate((image1,image2,image3), axis=0)
 
+    # unlabelled images
+    if unlab:
+        for _, _, fs in os.walk(flickr_root + 'image/unlabelled/'):
+            fs.sort()
+            for i, f in enumerate(fs):
+                print f
+                image = np.load(flickr_root + 'image/unlabelled/%s' % f)
+                if i == 0:
+                    unlab_image = image
+                else:
+                    if i == 2:
+                        break
+                    unlab_image = np.concatenate((unlab_image,image), axis=0)
+        print unlab_image.shape
+    
+    else:
+        unlab_image = None
+        
+    # tags(1-of-K) and labels
+    text = LoadSparse(flickr_root + 'text/text_all_2000_labelled.npz').todense()
+    label = np.load(flickr_root + 'labels.npy')
+
+    # tags(string)
     tags = {}
     with open(flickr_root + "text/vocab.txt") as f:
         for idx, line in enumerate(f):
@@ -49,14 +54,14 @@ def load_flickr25k(n_train=15000):
             tags[idx] = [spltd[1], spltd[2]]
 
     
-     # train (default: 15k)
+    # train (default: 15k)
     train_image = lab_image[:n_train]
-    train_text = text[:n_train]
+    train_text = np.array(text[:n_train])
     train_label = label[:n_train]
     
     # test (default: 10k)
     test_image = lab_image[n_train:]
-    test_text = text[n_train:]
+    test_text = np.array(text[n_train:])
     test_label = label[n_train:]
     
     return train_image, train_text, train_label,\
@@ -127,17 +132,19 @@ def find_kneighbors(vec, database, k):
 ## 1/23(Fri) TODO: Add unlab_img to pre_training ##
 ###################################################
 
-def flickr_classification(model, unlab=0):
+def flickr_classification(model, unlab=False):
 
     print '===================='
     print '   load dataset     '
     print '===================='
-    tra_img, tra_txt, tra_lab, tes_img, tes_txt, tes_lab, unlab_img, tags = load_flickr25k()
-    
+  
     # convert np.matrix to np.ndarray
-    tra_txt, tes_txt = np.array(tra_txt), np.array(tes_txt)
+    # tra_txt, tes_txt = np.array(tra_txt), np.array(tes_txt)
     if unlab:
+        tra_img, tra_txt, tra_lab, tes_img, tes_txt, tes_lab, unlab_img, tags = load_flickr25k(unlab=True)
         tra_img = np.concatenate((tra_img, unlab_img), axis=0)
+    else:
+        tra_img, tra_txt, tra_lab, tes_img, tes_txt, tes_lab, _, tags = load_flickr25k()
     
     # train
     print '===================='
@@ -280,7 +287,7 @@ if __name__ == "__main__":
     elif argvs[1] == 'c':
         print "Classification Task"
         
-        if argc != 3:
+        if argc != 3 and argc != 4:
             raise Exception("Usage: python multi_flickr.py c "\
                                 + "(joint_method: concatenate or cca or pcca)")
         
@@ -291,14 +298,14 @@ if __name__ == "__main__":
                                                fine_coef=1000000)
         elif argvs[2] == 'cca':
         
-            n_comp = 2
+            n_comp = int(argvs[3])
             model = BiModalMLELMClassifier([1024, 1024], [1024, 1024], [],\
                                                [10, 10], [10, 10], [],\
                                                joint_method="cca", n_comp=n_comp,\
                                                cca_param=0.1, fine_coef=1000)
         elif argvs[2] == 'pcca':
         
-            n_comp = 2
+            n_comp = int(argvs[3])
             model = BiModalMLELMClassifier([1024, 1024], [1024, 1024], [],\
                                                [100, 100], [100, 100], [],\
                                                joint_method="pcca", n_comp=n_comp,\
