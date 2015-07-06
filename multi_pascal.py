@@ -1,8 +1,7 @@
 # coding: utf-8
 from extreme import *
 from meanap import *
-#import cPickle as pkl
-#import scipy.sparse as sp
+import cPickle as pkl
 import numpy as np
 import sys
 from PIL import Image
@@ -55,7 +54,7 @@ def pascal_retrieval(model, nn_k):
     print '===================='
     tra_ids, tra_img, tra_txt, tra_lab, val_ids, val_img, val_txt, val_lab, tes_ids, tes_img, tes_txt, tes_lab = load_pascal()
     
-    print tra_img.shape, tra_img[100]
+    #print tra_img.shape, tra_img[100]
     ### test=>train
     #tes_ids, tes_img, tes_txt, tes_lab = tra_ids, tra_img, tra_txt, tra_lab
     #tes_img, tes_txt, tes_lab = tra_img[:100], tra_txt[:100], tra_lab[:100]
@@ -83,7 +82,7 @@ def pascal_retrieval(model, nn_k):
         if e.errno != errno.EEXIST:
             os.mkdir('retrieval')
             #raise e
-        pass
+        #pass
 
     f = open("retrieval/%s.log" % now,"w")
            
@@ -179,6 +178,7 @@ def ELM_retrieval(args):
 
     joint = args.joint
     hidden = args.hidden
+    output = args.output
     elm_param = args.reg_param
     cca_param = args.cca_param
     num_layers = args.layers
@@ -188,14 +188,15 @@ def ELM_retrieval(args):
     with open(fname, 'a') as f:
         mae = BiModalStackedELMAE([hidden], [hidden], [], [], [],\
                                   [elm_param], [elm_param], [elm_param], [elm_param], [],\
-                                  joint_method=joint, n_comp=128, cca_param=cca_param, iteration=num_layers)
+                                  joint_method=joint, n_comp=output, cca_param=cca_param, iteration=num_layers)
         #mae = BiModalStackedELMAE([1024, dim_bfcca], [1024, dim_bfcca], [], [], [],\
         #                              [elm_param, elm_param], [elm_param, elm_param], [elm_param], [elm_param], [],\
         #                              joint_method="cca", n_comp=64, cca_param=cca_param)
 
         mean_map, mean_top20 = pascal_retrieval(mae, 50)
         if not quiet:
-            print_log(f, str(num_layers) + ' ' + str(hidden) + ' ' + str(elm_param) + ' ' + str(cca_param)
+            print_log(f, str(num_layers) + ' ' + str(hidden) + ' ' + str(output) + ' '\
+                      + str(elm_param) + ' ' + str(cca_param)
                       + ' mean_map:' + str(mean_map) + ' mean_top20:' + str(mean_top20) + '\n')
         print('\nmean_map:' + str(mean_map))
         print('mean_top20:' + str(mean_top20) + '\n')
@@ -207,6 +208,7 @@ def HeMap_retrieval(args):
 
     joint = args.joint
     hidden = args.hidden
+    output = args.output
     HM_param = args.reg_param
     cca_param = args.cca_param
     num_layers = args.layers
@@ -215,7 +217,7 @@ def HeMap_retrieval(args):
     
     with open(fname, 'a') as f:
         hm = BiModalStackedHeMapLayers([hidden], [], [], [HM_param], [], [],\
-                                       joint_method=joint, n_comp=64, cca_param=cca_param, iteration=num_layers)
+                                       joint_method=joint, n_comp=output, cca_param=cca_param, iteration=num_layers)
             
         mean_map, mean_top20 = pascal_retrieval(hm, 50)
 
@@ -236,20 +238,28 @@ if __name__ == "__main__":
     parser = ArgumentParser(description=desc)
 
     parser.add_argument("-j", "--joint", type=str, dest="joint", default='cca',
-                      help="joint method", metavar="JOINT_METHOD")
+                        help="joint method", metavar="JOINT_METHOD")
     parser.add_argument("--hidden", type=int, dest="hidden", default=256,
-                      help="number of hidden units", metavar="HIDDEN")
-    parser.add_argument("-r", "--reg", type=int, dest="reg_param", default=1,
-                      help="regularize parameter of feature extraction layers", metavar="REG_PARAM")
-    parser.add_argument("-c", "--cca", type=int, dest="cca_param", default=1,
-                      help="regularize parameter of cca", metavar="CCA_PARAM")
-    parser.add_argument("-l", "--layers", type=int, dest="layers", default=2,
-                      help="number of layers", metavar="LAYERS")
+                        help="number of hidden units", metavar="HIDDEN")
+    parser.add_argument("--output", type=int, dest="output", default=64,
+                        help="number of output units", metavar="OUTPUT")
+    parser.add_argument("-r", "--reg", type=float, dest="reg_param", default=1,
+                        help="regularize parameter of feature extraction layers", metavar="REG_PARAM")
+    parser.add_argument("-c", "--cca", type=float, dest="cca_param", default=1,
+                        help="regularize parameter of cca", metavar="CCA_PARAM")
+    parser.add_argument("-l", "--layers", type=int, dest="layers", default=1,
+                        help="number of layers", metavar="LAYERS")
     parser.add_argument("-f", "--file", type=str, dest="filename", default='result',
-                      help="filename", metavar="FILE")
+                        help="filename", metavar="FILE")
     parser.add_argument("-q", "--quiet", action='store_true', dest="quiet", default=False, 
-                      help="do not print to file")
+                        help="do not print to file")
+    parser.add_argument("-m", "--model", type=int, dest="model", default="elm",
+                        help="model architecture\n model1: ML-ELM\n model2: HeMap", metavar="MODEL")
     args = parser.parse_args()
 
-    #bimodalMLELM(args)
-    HeMap_retrieval(args)
+    if args.model == 1:
+        ELM_retrieval(args)
+    elif args.model == 2:
+        HeMap_retrieval(args)
+    else:
+        raise Exception("Invalid Value")

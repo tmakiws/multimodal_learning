@@ -6,6 +6,8 @@
 ### optional arguments
   -h, --help:            show this help message and exit
   
+  -m, --model:           1: ML-ELM, 2: HeMap
+
   -j JOINT_METHOD, --joint JOINT_METHOD:
                         joint method
   
