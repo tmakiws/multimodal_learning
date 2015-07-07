@@ -8,7 +8,7 @@
   
   -m, --model:      1: ML-ELM, 2: HeMap (default: 1)
 
-  -j, --joint:      joint method (cca, pcca)
+  -j, --joint:      joint method (cca, pcca) (default: cca)
   
   --hidden:         number of hidden units (default: 256)
   
@@ -25,5 +25,6 @@
   -q, --quiet:      do not print to file
 
 ### example
-  pascal dataset retrieval used the ML-ELM model in which the number of hidden units is 512 and the number of layers is 5 (2 iterations of ELM+CCA)
+  pascal dataset retrieval used the ML-ELM model in which the number of hidden units is 512 and the number of layers is 5 (2 iterations of ELM+CCA):
+  
   `python multi_pascal.py --hidden 512 -l 2`
