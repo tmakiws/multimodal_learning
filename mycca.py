@@ -10,7 +10,7 @@ from math import pi, sqrt, exp
 
 class MyCCA(object):
 
-    def __init__(self, n_components=None, reg_param=0.1, show_runtime=False):
+    def __init__(self, n_components=None, reg_param=0.1, show_runtime=False, metric='euc'):
 
         self.n_components = n_components
         self.reg_param = reg_param
@@ -24,6 +24,7 @@ class MyCCA(object):
         self.Cxy = None
         self.Cyx = None
         self.show_runtime = show_runtime
+        self.metric = metric
 
                
     def get_params(self):
@@ -54,7 +55,7 @@ class MyCCA(object):
 
         # regularization
         # eig_vecs = np.dot(eig_vecs, np.diag(np.reciprocal(np.linalg.norm(eig_vecs, axis=0))))
-        print right.shape, eig_vecs.shape
+        #print right.shape, eig_vecs.shape
         
         var = np.dot(eig_vecs.T, np.dot(right, eig_vecs))
         # print var
@@ -100,22 +101,18 @@ class MyCCA(object):
 
         start = time.time()
         
+        print self.Cxx.shape
         # 正則化項を加える.
         self.Cxx += self.reg_param * np.average(np.diag(self.Cxx)) * np.eye(self.Cxx.shape[0])
         self.Cyy += self.reg_param * np.average(np.diag(self.Cyy)) * np.eye(self.Cyy.shape[0])
-
-        #l = 1
-        #self.Cxx += l*
-        #self.Cyy += l*
-
-        
+     
         # left = A, right = B
         xleft_right = np.linalg.solve(self.Cyy, self.Cyx)
         xleft = np.dot(self.Cxy, xleft_right)
         xright = self.Cxx
         self.eigvals, self.x_weights = self.solve_eigprob(xleft, xright)
         
-        print np.linalg.matrix_rank(self.Cyy), np.linalg.matrix_rank(self.Cxy), 
+        #print np.linalg.matrix_rank(self.Cyy), np.linalg.matrix_rank(self.Cxy), 
 
         # B = inv(Cyy) * Cyx * A * inv(diag(eigvals))
         # print xleft_right.shape, self.x_weights.shape, np.diag(np.reciprocal(self.eigvals))
@@ -128,12 +125,9 @@ class MyCCA(object):
         #y_eigvals, y_eigvecs = self.solve_eigprob(yleft, yright)  
         #print y_eigvecs
 
-        # d = min(len(x_eigvals), len(y_eigvals))
-        # print d
-
-        # self.x_weights = x_eigvecs
-        # self.y_weights = y_eigvecs
-        # self.eigvals = x_eigvals
+        if self.metric == 'cos':
+            self.x_weights = np.dot(self.x_weights, np.diag(self.eigvals*self.eigvals*self.eigvals*self.eigvals))
+            self.y_weights = np.dot(self.y_weights, np.diag(self.eigvals*self.eigvals*self.eigvals*self.eigvals))
         
         if self.show_runtime:
             print "Fitting done in %.2f sec." % (time.time() - start)
@@ -314,7 +308,7 @@ class semiCCA(MyCCA):
         # print d
 
         if self.show_runtime:
-             print "Fitting done in %.2f sec." % (time.time() - start)
+            print "Fitting done in %.2f sec." % (time.time() - start)
         
         #--------
 

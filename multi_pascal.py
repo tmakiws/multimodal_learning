@@ -6,6 +6,7 @@ import numpy as np
 import sys
 from PIL import Image
 from sklearn.neighbors import NearestNeighbors
+import sklearn.metrics.pairwise as smp
 
 import datetime
 # import locale
@@ -47,7 +48,7 @@ def extract_texts(textdb, idx, tags):
     return texts
 
     
-def pascal_retrieval(model, nn_k):
+def pascal_retrieval(model, nn_k, metric):
   
     print '===================='
     print '   load dataset     '
@@ -126,7 +127,11 @@ def pascal_retrieval(model, nn_k):
             
             #--- find k nearest neighbors
             # nn_ids, dists = find_kneighbors(rep, train_db, nn_k)
-            nbrs = NearestNeighbors(n_neighbors=nn_k, algorithm='ball_tree').fit(train_db)
+            if metric == 'euc':
+                nbrs = NearestNeighbors(n_neighbors=nn_k, algorithm='ball_tree').fit(train_db)
+            elif metric == 'cos':
+                nbrs = NearestNeighbors(n_neighbors=nn_k, algorithm='ball_tree', metric=smp.cosine_similarity).fit(train_db)
+            
             distances, indices = nbrs.kneighbors([rep])
             nn_ids, dists = indices[0], distances[0]
             
@@ -184,16 +189,18 @@ def ELM_retrieval(args):
     num_layers = args.layers
     fname = args.filename
     quiet = args.quiet
+    metric = args.metric
 
     with open(fname, 'a') as f:
         mae = BiModalStackedELMAE([hidden], [hidden], [], [], [],\
                                   [elm_param], [elm_param], [elm_param], [elm_param], [],\
-                                  joint_method=joint, n_comp=output, cca_param=cca_param, iteration=num_layers)
+                                  joint_method=joint, n_comp=output, cca_param=cca_param,\
+                                  iteration=num_layers, metric=metric)
         #mae = BiModalStackedELMAE([1024, dim_bfcca], [1024, dim_bfcca], [], [], [],\
         #                              [elm_param, elm_param], [elm_param, elm_param], [elm_param], [elm_param], [],\
         #                              joint_method="cca", n_comp=64, cca_param=cca_param)
 
-        mean_map, mean_top20 = pascal_retrieval(mae, 50)
+        mean_map, mean_top20 = pascal_retrieval(mae, 50, metric)
         if not quiet:
             print_log(f, str(num_layers) + ' ' + str(hidden) + ' ' + str(output) + ' '\
                       + str(elm_param) + ' ' + str(cca_param)
@@ -214,12 +221,14 @@ def HeMap_retrieval(args):
     num_layers = args.layers
     fname = args.filename
     quiet = args.quiet
+    metric = args.metric
     
     with open(fname, 'a') as f:
         hm = BiModalStackedHeMapLayers([hidden], [], [], [HM_param], [], [],\
-                                       joint_method=joint, n_comp=output, cca_param=cca_param, iteration=num_layers)
+                                       joint_method=joint, n_comp=output, cca_param=cca_param,\
+                                       iteration=num_layers, metric=metric)
             
-        mean_map, mean_top20 = pascal_retrieval(hm, 50)
+        mean_map, mean_top20 = pascal_retrieval(hm, 50, metric)
 
         if not quiet:
             print_log(f, str(num_layers) + ' ' + str(hidden) + ' ' + str(HM_param) + ' ' + str(cca_param)
@@ -253,8 +262,10 @@ if __name__ == "__main__":
                         help="filename", metavar="FILE")
     parser.add_argument("-q", "--quiet", action='store_true', dest="quiet", default=False, 
                         help="do not print to file")
-    parser.add_argument("-m", "--model", type=int, dest="model", default="elm",
+    parser.add_argument("-m", "--model", type=int, dest="model", default=1,
                         help="model architecture\n model1: ML-ELM\n model2: HeMap", metavar="MODEL")
+    parser.add_argument("--metric", type=str, dest="metric", default='euc',
+                        help="metric\n euc: euclid distance\n cos: cosine similarity", metavar="METRIC")
     args = parser.parse_args()
 
     if args.model == 1:

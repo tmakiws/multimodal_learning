@@ -162,12 +162,12 @@ def sign(x):
 
     
 
-class BiModalStackedELMAE(object):
+class BiModalStacELMCELMAE(object):
 
     def __init__(self, n_hidden1, n_hidden2, n_hidden3, n_hidden4, n_joint,
                  n_coef1, n_coef2, n_coef3, n_coef4, n_coefj,
                  joint_method="cca", n_comp=None, cca_param=None, activation=sigmoid,
-                 iteration=2, dim_add=-1, plot=False, stack=False):
+                 iteration=2, dim_add=-1, plot=False, stack=False, metric='euc'):
         
         modal1, modal2, cca = [], [], []
         jm = ['cca', 'pcca', 'semi']
@@ -183,9 +183,9 @@ class BiModalStackedELMAE(object):
                 if n_comp == None:
                     raise Exception("require n_comp if joint_method uses CCA.")
                 elif joint_method == 'semi':
-                    cca.append(semiCCA(reg_param=cca_param, show_runtime=True))
+                    cca.append(semiCCA(reg_param=cca_param, show_runtime=True, metric=metric))
                 else:
-                    cca.append(MyCCA(reg_param=cca_param, show_runtime=True))
+                    cca.append(MyCCA(reg_param=cca_param, show_runtime=True, metric=metric))
             else:
                 pass
             
@@ -460,7 +460,7 @@ class BiModalStackedHeMapLayers(BiModalStackedELMAE):
     def __init__(self, n_hidden1, n_hidden2 , n_joint,
                  n_coef1, n_coef2, n_coefj,
                  joint_method="concatenate", n_comp=None, cca_param=None, activation=sigmoid,
-                 iteration=2, dim_add=-1):
+                 iteration=2, dim_add=-1, metric='euc'):
         
         hemaps, cca = [], []
         self.iteration = int(iteration)
@@ -474,7 +474,7 @@ class BiModalStackedHeMapLayers(BiModalStackedELMAE):
                     raise Exception("require n_comp if joint_method is 'cca' or 'pcca'.")
                 else:
                     # self.cca = CCA(n_components=n_comp)
-                    cca.append(MyCCA(reg_param=cca_param, show_runtime=True))
+                    cca.append(MyCCA(reg_param=cca_param, show_runtime=True, metric=metric))
                     #self.cca = MyCCA(reg_param=cca_param, show_runtime=True)
             else:
                 pass
@@ -897,87 +897,87 @@ class StackedELMAutoEncoder(object):
 ##  Stacked Extreme Learning Machine Correspondance AutoEncoders
 #################################################################
    
-class StackedELMCrossModalAutoEncoders(StackedELMAutoEncoder):
-    """
-    Stacked Extreme Learning Machine Correspondance AutoEncoders
+# class StackedELMCrossModalAutoEncoders(StackedELMAutoEncoder):
+#     """
+#     Stacked Extreme Learning Machine Correspondance AutoEncoders
 
     
-    """
+#     """
     
-    def __init__(self, n_hidden=None, n_coef=None,
-                 activation=sigmoid, seed=123):
-        # initialize size of neuron
-        if n_hidden is None:
-            raise Exception("nlist_hidden is udefined")
-        self.n_hidden = n_hidden
-        if n_coef is None:
-            n_coef = [None] * len(n_hidden)
-        self.coef = n_coef
-        self.activation = activation
+#     def __init__(self, n_hidden=None, n_coef=None,
+#                  activation=sigmoid, seed=123):
+#         # initialize size of neuron
+#         if n_hidden is None:
+#             raise Exception("nlist_hidden is udefined")
+#         self.n_hidden = n_hidden
+#         if n_coef is None:
+#             n_coef = [None] * len(n_hidden)
+#         self.coef = n_coef
+#         self.activation = activation
 
-        # initialize auto_encoder
-        auto_encoders = []
-        for i, num in enumerate(n_hidden):
-            ae1 = ELMCrossModalAutoEncoder(activation=activation, n_hidden=num, coef=n_coef[i], seed=seed)
-            ae2 = ELMCrossModalAutoEncoder(activation=activation, n_hidden=num, coef=n_coef[i], seed=seed)
-            auto_encoders1.append(ae1)
-            auto_encoders2.append(ae2)
-        self.auto_encoders1 = auto_encoders1
-        self.auto_encoders2 = auto_encoders2
+#         # initialize auto_encoder
+#         auto_encoders = []
+#         for i, num in enumerate(n_hidden):
+#             ae1 = ELMCrossModalAutoEncoder(activation=activation, n_hidden=num, coef=n_coef[i], seed=seed)
+#             ae2 = ELMCrossModalAutoEncoder(activation=activation, n_hidden=num, coef=n_coef[i], seed=seed)
+#             auto_encoders1.append(ae1)
+#             auto_encoders2.append(ae2)
+#         self.auto_encoders1 = auto_encoders1
+#         self.auto_encoders2 = auto_encoders2
 
 
-    def pre_train(self, input1, input2):
+#     def pre_train(self, input1, input2):
 
-        # pre_train
-        print "pre_train"
-        data1, data2 = input1, input2
-        betas1, betas2 = [], []
-        for i, (ae1, ae2) in enumerate(zip(self.auto_encoders1, self.auto_encoders2)):
-            # fit auto_encoder
-            print " ", i,"ae fit"
-            ae1.fit(data1, data2)
-            ae2.fit(data2, data1)
+#         # pre_train
+#         print "pre_train"
+#         data1, data2 = input1, input2
+#         betas1, betas2 = [], []
+#         for i, (ae1, ae2) in enumerate(zip(self.auto_encoders1, self.auto_encoders2)):
+#             # fit auto_encoder
+#             print " ", i,"ae fit"
+#             ae1.fit(data1, data2)
+#             ae2.fit(data2, data1)
 
-            # get beta
-            beta1 = ae1.layer.beta
-            beta2 = ae2.layer.beta
+#             # get beta
+#             beta1 = ae1.layer.beta
+#             beta2 = ae2.layer.beta
             
-            # part use activation and bias
-            act1 = np.dot(data1, beta.T) + ae1.layer.bias
-            act2 = np.dot(data2, beta.T) + ae2.layer.bias
+#             # part use activation and bias
+#             act1 = np.dot(data1, beta.T) + ae1.layer.bias
+#             act2 = np.dot(data2, beta.T) + ae2.layer.bias
             
-            # if num_unit is equal, activation is linear
-            #print data.shape[0], ae.n_hidden
-            #if data.shape[0] != ae.n_hidden:
-            data1 = self.activation(act1)
-            data2 = self.activation(act2)
+#             # if num_unit is equal, activation is linear
+#             #print data.shape[0], ae.n_hidden
+#             #if data.shape[0] != ae.n_hidden:
+#             data1 = self.activation(act1)
+#             data2 = self.activation(act2)
 
-            # append beta
-            betas1.append(beta1)
-            betas2.append(beta2)
+#             # append beta
+#             betas1.append(beta1)
+#             betas2.append(beta2)
 
-        # set betas and data for fine_tune
-        self.betas1 = betas1
-        self.betas2 = betas2
-        self.data4fine1 = data1
-        self.data4fine2 = data2
+#         # set betas and data for fine_tune
+#         self.betas1 = betas1
+#         self.betas2 = betas2
+#         self.data4fine1 = data1
+#         self.data4fine2 = data2
 
-        return data1, data2
+#         return data1, data2
 
 
-    def pre_extraction(self, input1, input2, limit=-1):
+#     def pre_extraction(self, input1, input2, limit=-1):
 
-        if input1:
-            data1 = StackedELMAutoEncoder.pre_extraction(self, input1, limit=-1)
-        else:
-            data1 = None
+#         if input1:
+#             data1 = StackedELMAutoEncoder.pre_extraction(self, input1, limit=-1)
+#         else:
+#             data1 = None
 
-        if input2:
-            data2 = StackedELMAutoEncoder.pre_extraction(self, input2, limit=-1)
-        else:
-            data2 = None
+#         if input2:
+#             data2 = StackedELMAutoEncoder.pre_extraction(self, input2, limit=-1)
+#         else:
+#             data2 = None
 
-        return data1, data2
+#         return data1, data2
 
     
 class ELMAutoEncoder(object):
@@ -1094,73 +1094,73 @@ class ELMAutoEncoder(object):
     
 
 
-class ELMCrossModalAutoEncoder(ELMAutoEncoder):
-    """
-    Extreme Learning Machine Correspondance Auto Encoder
+# class ELMCrossModalAutoEncoder(ELMAutoEncoder):
+#     """
+#     Extreme Learning Machine Correspondance Auto Encoder
     
     
-    """
+#     """
 
-    def __init__(self, activation=sigmoid,
-                 n_hidden=50, coef=None, seed=128, domain=[-1., 1.]):
+#     def __init__(self, activation=sigmoid,
+#                  n_hidden=50, coef=None, seed=128, domain=[-1., 1.]):
 
-        ELMAutoEncoder.__init__(self, activation=sigmoid, n_hidden=50, coef=None, seed=128, domain=[-1., 1.])
+#         ELMAutoEncoder.__init__(self, activation=sigmoid, n_hidden=50, coef=None, seed=128, domain=[-1., 1.])
 
 
-    def construct(self, input, output):
-        # set parameter of layer
-        self.input = input
-        self.n_input = len(input[0])
-        self.n_output = len(output[0])
+#     def construct(self, input, output):
+#         # set parameter of layer
+#         self.input = input
+#         self.n_input = len(input[0])
+#         self.n_output = len(output[0])
        
-        low, high = self.domain
+#         low, high = self.domain
 
-        # set weight and bias (randomly)
-        weight = self.np_rng.uniform(low = low,
-                                     high = high,
-                                     size = (self.n_input,
-                                             self.n_hidden))
-        bias = self.np_rng.uniform(low = low,
-                                   high = high,
-                                   size = self.n_hidden)
+#         # set weight and bias (randomly)
+#         weight = self.np_rng.uniform(low = low,
+#                                      high = high,
+#                                      size = (self.n_input,
+#                                              self.n_hidden))
+#         bias = self.np_rng.uniform(low = low,
+#                                    high = high,
+#                                    size = self.n_hidden)
 
-        # orthogonal weight and forcely regularization
+#         # orthogonal weight and forcely regularization
 
-        h, w = weight.shape
-        if h < w:
-            # print "height < width"
-            weight = weight.T
-            q, r = np.linalg.qr(weight[:h, :])
-            weight[:h, :] = q.T
-            weight = weight.T
-        else:
-            # print "height > width"
-            weight[:w, :], r = np.linalg.qr(weight[:w, :])
+#         h, w = weight.shape
+#         if h < w:
+#             # print "height < width"
+#             weight = weight.T
+#             q, r = np.linalg.qr(weight[:h, :])
+#             weight[:h, :] = q.T
+#             weight = weight.T
+#         else:
+#             # print "height > width"
+#             weight[:w, :], r = np.linalg.qr(weight[:w, :])
 
-        # bias regularization
-        denom = np.linalg.norm(bias)
-        if denom != 0:
-            denom = bias / denom
+#         # bias regularization
+#         denom = np.linalg.norm(bias)
+#         if denom != 0:
+#             denom = bias / denom
         
-        # set weight and bias
-        self.weight = weight
-        self.bias = bias     
+#         # set weight and bias
+#         self.weight = weight
+#         self.bias = bias     
         
             
-        # initialize layer
-        self.layer = Layer(self.activation,
-                           [self.n_input, self.n_hidden, self.n_output],
-                           self.weight,
-                           self.bias,
-                           self.coef)
+#         # initialize layer
+#         self.layer = Layer(self.activation,
+#                            [self.n_input, self.n_hidden, self.n_output],
+#                            self.weight,
+#                            self.bias,
+#                            self.coef)
 
         
-    def fit(self, input, output):
-        # construct layer
-        self.construct(input, output)
+#     def fit(self, input, output):
+#         # construct layer
+#         self.construct(input, output)
 
-        # fit layer
-        self.layer.fit(input, output)
+#         # fit layer
+#         self.layer.fit(input, output)
 
 
 

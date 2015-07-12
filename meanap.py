@@ -65,7 +65,6 @@ def mapk(actual, predicted, k=10):
 
 def top20(actual, predicted, k=50):
     
-
     # print type(predicted)
     if len(predicted) > k:
         predicted = predicted[:k]
